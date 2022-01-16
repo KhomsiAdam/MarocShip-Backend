@@ -21,7 +21,7 @@ const userSchema = Joi.object({
 // Get all users (without passwords)
 const get = async (model, req, res, next) => {
   try {
-    const result = await model.find({}, { fields: { password: 0 } });
+    const result = await model.find().select('-password');
     res.json(result);
   } catch (error) {
     next(error);
@@ -32,13 +32,12 @@ const get = async (model, req, res, next) => {
 const register = async (model, req, res, next) => {
   try {
     const hashed = await bcrypt.hash(req.body.password, 12);
-    const newDriver = {
+    const newUser = new model({
       email: req.body.email,
       password: hashed
-    };
-    const insertedUser = await model.insert(newDriver);
-    delete insertedUser.password;
-    res.json(insertedUser)
+    })
+    await newUser.save();
+    res.json({ message: 'User was created successfully.' });
   } catch (error) {
     res.status(500);
     next(error);
@@ -59,7 +58,7 @@ const login = async (role, req, res, next) => {
       res.json({
         token: auth.generateAccessToken(req.user, role)
       });
-      } else {
+    } else {
       res.status(422);
       throw new Error('Unable to login.');
     }
@@ -71,29 +70,29 @@ const login = async (role, req, res, next) => {
 
 // Refresh access token
 const refresh = async (model, role, req, res, next) => {
-      // Get refresh token from cookie
-      const token = req.cookies.rtkn;
-      if (!token) {
-        return res.json({ ok: false, token: '' });
-      }
-      // Validate refresh token
-      let payload = null;
-      try {
-        payload = jwt.verify(token, auth.setRefreshSecret(role));
-      } catch (err) {
-        __log.error(err)
-        return res.json({ ok: false, token: '' });
-      }
-      // Get user
-      const user = await model.findOne({ _id: payload._id });
-      if (!user) {
-        return res.json({ ok: false, token: '' });
-      }
-      // Generate new refresh token
-      auth.sendRefreshToken(res, auth.generateRefreshToken(user, role));
-    
-      // Generate new access token
-      return res.json({ ok: true, token: auth.generateAccessToken(user, role) });    
+  // Get refresh token from cookie
+  const token = req.cookies.rtkn;
+  if (!token) {
+    return res.json({ ok: false, token: '' });
+  }
+  // Validate refresh token
+  let payload = null;
+  try {
+    payload = jwt.verify(token, auth.setRefreshSecret(role));
+  } catch (err) {
+    __log.error(err)
+    return res.json({ ok: false, token: '' });
+  }
+  // Get user
+  const user = await model.findOne({ _id: payload._id });
+  if (!user) {
+    return res.json({ ok: false, token: '' });
+  }
+  // Generate new refresh token
+  auth.sendRefreshToken(res, auth.generateRefreshToken(user, role));
+
+  // Generate new access token
+  return res.json({ ok: true, token: auth.generateAccessToken(user, role) });
 }
 
 // Logout user
@@ -116,8 +115,7 @@ const updateOne = async (model, req, res, next) => {
         }
         const result = await model.findOneAndUpdate(query, {
           $set: updatedUser,
-        });
-        delete result.password;
+        }, { new: true }).select('-password');
         res.json(result);
       } else {
         next();

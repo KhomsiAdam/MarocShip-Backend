@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
+const {ADMIN_ACCESS_SECRET, MANAGER_ACCESS_SECRET, SUPERVISOR_ACCESS_SECRET, DRIVER_ACCESS_SECRET, ADMIN_REFRESH_SECRET, MANAGER_REFRESH_SECRET, SUPERVISOR_REFRESH_SECRET, DRIVER_REFRESH_SECRET} = process.env;
+
 // User schema for validation
 const userSchema = Joi.object({
   email: Joi.string()
@@ -19,16 +21,16 @@ const setAccessSecret = (role) => {
   let secret;
   switch (role) {
     case 'Admin':
-      secret = process.env.ADMIN_SECRET;
+      secret = ADMIN_ACCESS_SECRET;
       break;
     case 'Manager':
-      secret = process.env.MANAGER_SECRET;
+      secret = MANAGER_ACCESS_SECRET;
       break;
     case 'Supervisor':
-      secret = process.env.SUPERVISOR_SECRET;
+      secret = SUPERVISOR_ACCESS_SECRET;
       break;
     case 'Driver':
-      secret = process.env.DRIVER_SECRET;
+      secret = DRIVER_ACCESS_SECRET;
       break;
   }
   return secret;
@@ -38,16 +40,16 @@ const setRefreshSecret = (role) => {
   let secret;
   switch (role) {
     case 'Admin':
-      secret = process.env.ADMIN_REFRESH;
+      secret = ADMIN_REFRESH_SECRET;
       break;
     case 'Manager':
-      secret = process.env.MANAGER_REFRESH;
+      secret = MANAGER_REFRESH_SECRET;
       break;
     case 'Supervisor':
-      secret = process.env.SUPERVISOR_REFRESH;
+      secret = SUPERVISOR_REFRESH_SECRET;
       break;
     case 'Driver':
-      secret = process.env.DRIVER_REFRESH;
+      secret = DRIVER_REFRESH_SECRET;
       break;
   }
   return secret;
@@ -144,7 +146,7 @@ const findUser = (model, defaultLoginError, isError, errorCode = 422) => async (
   try {
     const user = await model.findOne({
       email: req.body.email,
-    });
+    }, 'email password');
     if (isError(user)) {
       res.status(errorCode);
       next(new Error(defaultLoginError));

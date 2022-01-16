@@ -1,27 +1,36 @@
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const logger = require('../helpers/logger');
 require('dotenv').config();
-
-const db = require('../config/db');
 
 const Admin = require('../models/Admin');
 
-async function createAdmin() {
-  try {
-    const user = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
-    if (!user) {
-      await Admin.insert({
-        email: process.env.ADMIN_EMAIL,
-        password: await bcrypt.hash(process.env.ADMIN_PASSWORD, 12)
-      });
-      __log.info('Admin user created!');
-    } else {
-      __log.info('Admin user already exists!');
+const {DB_USER, DB_PASS, DB_CLUSTER, DB_NAME, ADMIN_EMAIL, ADMIN_PASSWORD} = process.env;
+
+const DB_URI = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_CLUSTER}.tdwf4.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`
+
+const createAdmin = async () => {
+  mongoose.connect(DB_URI, { useNewUrlParser: true }, async () => {
+    try {
+      const user = await Admin.findOne({ email: ADMIN_EMAIL });
+      if (!user) {
+        const hashed = await bcrypt.hash(ADMIN_PASSWORD, 12);
+        const admin = new Admin({
+          email: ADMIN_EMAIL,
+          password: hashed
+        })
+        await admin.save();
+        logger.info('Admin user created!');
+        mongoose.disconnect();
+      } else {
+        logger.info('Admin user already exists!');
+        mongoose.disconnect();
+      }
+    } catch (error) {
+      logger.error(error);
+      mongoose.disconnect();
     }
-  } catch (error) {
-    console.error(error);
-  } finally {
-    db.close();
-  }
+  });
 }
 
 createAdmin();
