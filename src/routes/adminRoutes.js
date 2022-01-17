@@ -1,6 +1,6 @@
 const express = require('express');
+
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 
 // Middlewares
 const auth = require('../middlewares/auth');
@@ -29,6 +29,14 @@ router.post(
   auth.validateUser(LoginError),
   auth.findUser(Admin, LoginError, (user) => !user),
   adminController.login,
+);
+
+// Admin register
+router.post(
+  '/register',
+  auth.validateUser(),
+  auth.findUser(Admin, registerError, (user) => user, 409),
+  adminController.register,
 );
 
 // Manager register

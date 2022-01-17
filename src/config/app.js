@@ -5,6 +5,7 @@ const express = require('express');
 
 // Middlewares (import)
 // const cors = require('cors');
+const compression = require('compression');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const morgan = require('../middlewares/morgan');
@@ -26,10 +27,18 @@ const driverRoutes = require('../routes/driverRoutes');
 //   origin: process.env.CLIENT_ORIGIN,
 //   credentials: true
 // }));
+app.use(compression());
 app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan);
+
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Hello World!',
+    user: req.user,
+  });
+});
 
 // Endpoints
 app.use('/admin', adminRoutes);

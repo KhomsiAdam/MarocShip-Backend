@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 
 // Middlewares
@@ -56,6 +57,5 @@ router.post(
 router.patch('/supervisor/:id', auth.isAuth('Manager'), supervisorController.updateOne);
 // Update Driver
 router.patch('/driver/:id', auth.isAuth('Manager'), driverController.updateOne);
-
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 
 // Middlewares
@@ -12,7 +13,6 @@ const driverController = require('../controllers/driverController');
 
 // Errors
 const LoginError = 'Unable to login.';
-const registerError = 'User already exists with this email.';
 
 // Refresh token
 router.post('/refresh', driverController.refresh);

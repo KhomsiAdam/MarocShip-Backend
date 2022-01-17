@@ -1,7 +1,16 @@
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
-const {ADMIN_ACCESS_SECRET, MANAGER_ACCESS_SECRET, SUPERVISOR_ACCESS_SECRET, DRIVER_ACCESS_SECRET, ADMIN_REFRESH_SECRET, MANAGER_REFRESH_SECRET, SUPERVISOR_REFRESH_SECRET, DRIVER_REFRESH_SECRET} = process.env;
+const {
+  ADMIN_ACCESS_SECRET,
+  MANAGER_ACCESS_SECRET,
+  SUPERVISOR_ACCESS_SECRET,
+  DRIVER_ACCESS_SECRET,
+  ADMIN_REFRESH_SECRET,
+  MANAGER_REFRESH_SECRET,
+  SUPERVISOR_REFRESH_SECRET,
+  DRIVER_REFRESH_SECRET,
+} = process.env;
 
 // User schema for validation
 const userSchema = Joi.object({
@@ -32,9 +41,12 @@ const setAccessSecret = (role) => {
     case 'Driver':
       secret = DRIVER_ACCESS_SECRET;
       break;
+    default:
+      secret = DRIVER_ACCESS_SECRET;
+      break;
   }
   return secret;
-}
+};
 // Set refresh token secret key depending on role provided
 const setRefreshSecret = (role) => {
   let secret;
@@ -51,20 +63,23 @@ const setRefreshSecret = (role) => {
     case 'Driver':
       secret = DRIVER_REFRESH_SECRET;
       break;
+    default:
+      secret = DRIVER_REFRESH_SECRET;
+      break;
   }
   return secret;
-}
+};
 
 // Access Token generation when login
 const generateAccessToken = (user, role) => {
   const payload = {
     _id: user._id,
-    email: user.email
+    email: user.email,
   };
   return jwt.sign(
     payload,
     setAccessSecret(role),
-    { expiresIn: '15m' }
+    { expiresIn: '15m' },
   );
 };
 
@@ -72,12 +87,12 @@ const generateAccessToken = (user, role) => {
 const generateRefreshToken = (user, role) => {
   const payload = {
     _id: user._id,
-    email: user.email
+    email: user.email,
   };
   return jwt.sign(
     payload,
     setRefreshSecret(role),
-    { expiresIn: '7d' }
+    { expiresIn: '7d' },
   );
 };
 
@@ -88,9 +103,17 @@ const sendRefreshToken = (res, token) => {
     token,
     {
       httpOnly: true,
-      path: '/refresh'
-    })
-}
+      path: '/refresh',
+    },
+  );
+};
+
+// Unauthorized error
+const unAuthorized = (res, next) => {
+  const error = new Error('Unauthorized.');
+  res.status(401);
+  next(error);
+};
 
 // Is authenticated middleware
 const isAuth = (role) => (req, res, next) => {
@@ -100,6 +123,7 @@ const isAuth = (role) => (req, res, next) => {
     if (token) {
       jwt.verify(token, setAccessSecret(role), (error, user) => {
         if (error) {
+          res.setHeader('Content-Type', 'application/json');
           next(error);
         }
         req.user = user;
@@ -111,7 +135,7 @@ const isAuth = (role) => (req, res, next) => {
   } else {
     unAuthorized(res, next);
   }
-}
+};
 
 // Is logged in
 const isLoggedIn = (req, res, next) => {
@@ -120,14 +144,7 @@ const isLoggedIn = (req, res, next) => {
   } else {
     unAuthorized(res, next);
   }
-}
-
-// Unauthorized error
-const unAuthorized = (res, next) => {
-  const error = new Error('Unauthorized.');
-  res.status(401);
-  next(error);
-}
+};
 
 // User validation
 const validateUser = (defaultErrorMessage = '') => (req, res, next) => {
@@ -142,9 +159,9 @@ const validateUser = (defaultErrorMessage = '') => (req, res, next) => {
 };
 
 // Find user with provided credentials
-const findUser = (model, defaultLoginError, isError, errorCode = 422) => async (req, res, next) => {
+const findUser = (Model, defaultLoginError, isError, errorCode = 422) => async (req, res, next) => {
   try {
-    const user = await model.findOne({
+    const user = await Model.findOne({
       email: req.body.email,
     }, 'email password');
     if (isError(user)) {
@@ -169,5 +186,5 @@ module.exports = {
   setRefreshSecret,
   generateAccessToken,
   generateRefreshToken,
-  sendRefreshToken
+  sendRefreshToken,
 };

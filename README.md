@@ -2,9 +2,11 @@
 
 MarocShip wishes to simplify the management of deliveries for it’s e-commerce partners with the creation of a Rest API.
 
-Database: MongoDB (Monk/Mongoose).
+Database: MongoDB (Mongoose).
 
 Logs with Morgan and Winston.
+
+Testing with Mocha, Chai and Supertest.
 
 # Config:
 
@@ -16,6 +18,9 @@ DB_CLUSTER=
 DB_NAME=
 DB_USER=
 DB_PASS=
+
+# Test Database
+DB_NAME_TEST=
 
 # Client Origin
 CLIENT_ORIGIN=

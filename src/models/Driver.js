@@ -1,20 +1,21 @@
-// const db = require('../config/db');
-
-// const drivers = db.get('drivers');
-// drivers.createIndex('email', { unique: true });
-
-// module.exports = drivers;
 const mongoose = require('mongoose');
 
 const Driver = mongoose.Schema({
   email: {
     type: String,
-    required: true
+    required: true,
   },
   password: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
+  distanceTraveled: {
+    type: Number,
+  },
+  vehicle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vehicle',
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Driver', Driver);

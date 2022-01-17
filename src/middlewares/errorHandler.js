@@ -1,4 +1,5 @@
-module.exports = Handler = (err, req, res, next) => {
+/* eslint-disable no-unused-vars */
+const Handler = (err, req, res, next) => {
   res.status(res.statusCode || 500);
   if (process.env.NODE_ENV !== 'production') {
     res.json({
@@ -7,8 +8,10 @@ module.exports = Handler = (err, req, res, next) => {
     });
   } else {
     res.json({
-      message: err.message
+      message: err.message,
     });
   }
   __log.error(err.message);
-}
+};
+
+module.exports = Handler;
