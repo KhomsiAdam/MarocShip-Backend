@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Delivery = mongoose.Schema({
   type: {
     type: String,
+    enum: ['National', 'International'],
     required: true,
   },
   weight: {

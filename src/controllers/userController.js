@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const Joi = require('joi');
 
 const auth = require('../middlewares/auth');
+const Truck = require('../models/Truck');
 
 // User schema for validation
 const userSchema = Joi.object({
@@ -15,15 +16,32 @@ const userSchema = Joi.object({
     .trim()
     .min(10)
     .required(),
+
+  distanceTraveled: Joi.number()
+    .positive(),
+
+  truck: Joi.string()
+    .alphanum()
+    .trim(),
+
 });
 
 // Get all users (without passwords)
 const get = async (Model, req, res, next) => {
-  try {
-    const result = await Model.find().select('-password');
-    res.json(result);
-  } catch (error) {
-    next(error);
+  if (Model.modelName !== 'Driver') {
+    try {
+      const result = await Model.find().select('-password');
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    try {
+      const result = await Model.find().select('-password').populate('truck');
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
   }
 };
 
@@ -31,10 +49,21 @@ const get = async (Model, req, res, next) => {
 const register = async (Model, req, res, next) => {
   try {
     const hashed = await bcrypt.hash(req.body.password, 12);
-    const newUser = new Model({
-      email: req.body.email,
-      password: hashed,
-    });
+    let newUser;
+    if (Model.modelName !== 'Driver') {
+      newUser = new Model({
+        email: req.body.email,
+        password: hashed,
+      });
+    } else {
+      const trucks = await Truck.find();
+      const randomTruck = trucks[Math.floor(Math.random() * trucks.length)];
+      newUser = new Model({
+        email: req.body.email,
+        password: hashed,
+        truck: randomTruck._id,
+      });
+    }
     await newUser.save();
     res.json({ message: 'User was created successfully.' });
   } catch (error) {

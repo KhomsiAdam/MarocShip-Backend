@@ -54,10 +54,16 @@ Install dependencies:
 npm install
 ```
 
-Seed Admin account:
+Seed Database with and Admin account and Trucks:
 
 ```
-npm run seed:admin
+npm run seed
+```
+
+Run tests (need a testing database):
+
+```
+npm test
 ```
 
 # Usage:

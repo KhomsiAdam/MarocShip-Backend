@@ -23,6 +23,14 @@ const userSchema = Joi.object({
     .trim()
     .min(10)
     .required(),
+
+  distanceTraveled: Joi.number()
+    .positive(),
+
+  truck: Joi.string()
+    .alphanum()
+    .trim(),
+
 });
 
 // Set access token secret key depending on role provided

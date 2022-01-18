@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 
-const Vehicle = mongoose.Schema({
+const Truck = mongoose.Schema({
   type: {
     type: String,
+    enum: ['Light', 'Medium', 'Heavy'],
     required: true,
   },
   brand: {
@@ -15,4 +16,4 @@ const Vehicle = mongoose.Schema({
   },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Vehicle', Vehicle);
+module.exports = mongoose.model('Truck', Truck);

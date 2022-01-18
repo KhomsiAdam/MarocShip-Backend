@@ -11,8 +11,8 @@ const {
 
 const DB_URI = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_CLUSTER}.tdwf4.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`;
 
-const createAdmin = async () => {
-  mongoose.connect(DB_URI, { useNewUrlParser: true }, async () => {
+const seedAdmin = async () => {
+  mongoose.connect(DB_URI, async () => {
     try {
       const user = await Admin.findOne({ email: ADMIN_EMAIL });
       if (!user) {
@@ -35,4 +35,4 @@ const createAdmin = async () => {
   });
 };
 
-createAdmin();
+seedAdmin();

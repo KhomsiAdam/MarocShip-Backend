@@ -7,11 +7,11 @@
     "start": "node src",
     "dev": "nodemon src",
     "dev:sync": "nodemon src --trace-sync-io",
-    "seed:admin": "node src/tasks/createAdmin.js",
+    "seed": "node src/tasks/seedAdmin.js src/tasks/seedTrucks.js",
     "lint": "eslint src/",
     "lint:fix": "npm run lint -- --fix",
-    "test": "mocha src/**/*.test.js",
-    "test:watch": "mocha src/**/*.test.js --watch"
+    "test": "mocha src/tests/*.test.js --timeout 5000",
+    "test:watch": "mocha src/tests/*.test.js --watch"
   },
   "license": "MIT",
   "dependencies": {

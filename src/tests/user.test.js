@@ -27,8 +27,8 @@ const badAdmin = {
 
 describe('POST /admin/register', () => {
   before(async () => {
-    mongoose.connect(DB_URI);
-    await Admin.deleteMany({});
+    await mongoose.connect(DB_URI);
+    await Admin.collection.drop();
   });
 
   it('Email required!', async () => {
@@ -61,10 +61,10 @@ describe('POST /admin/register', () => {
   });
 });
 
-describe('POST /admin/login', async () => {
+describe('POST /admin/login', () => {
   let cookie;
   after(async () => {
-    mongoose.disconnect();
+    await mongoose.disconnect();
   });
 
   it('Email required!', async () => {

@@ -12,9 +12,9 @@ const Driver = mongoose.Schema({
   distanceTraveled: {
     type: Number,
   },
-  vehicle: {
+  truck: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Vehicle',
+    ref: 'Truck',
   },
 }, { timestamps: true });
 
