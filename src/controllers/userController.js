@@ -23,7 +23,6 @@ const userSchema = Joi.object({
   truck: Joi.string()
     .alphanum()
     .trim(),
-
 });
 
 // Get all users (without passwords)
