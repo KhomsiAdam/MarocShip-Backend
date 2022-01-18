@@ -17,11 +17,13 @@ const managerController = require('../controllers/managerController');
 const LoginError = 'Unable to login.';
 const registerError = 'User already exists with this email.';
 
-// Refresh token
-router.post('/refresh', adminController.refresh);
-
-// Get Managers
-router.get('/managers', auth.isAuth('Admin'), managerController.get);
+// Admin register
+router.post(
+  '/register',
+  auth.validateUser(),
+  auth.findUser(Admin, registerError, (user) => user, 409),
+  adminController.register,
+);
 
 // Admin login
 router.post(
@@ -31,12 +33,17 @@ router.post(
   adminController.login,
 );
 
-// Admin register
+// Refresh token
 router.post(
-  '/register',
-  auth.validateUser(),
-  auth.findUser(Admin, registerError, (user) => user, 409),
-  adminController.register,
+  '/refresh',
+  adminController.refresh,
+);
+
+// Get Managers
+router.get(
+  '/managers',
+  auth.isAuth('Admin'),
+  managerController.get,
 );
 
 // Manager register
@@ -49,6 +56,10 @@ router.post(
 );
 
 // Update Manager
-router.patch('/manager/:id', auth.isAuth('Admin'), managerController.updateOne);
+router.patch(
+  '/manager/:id',
+  auth.isAuth('Admin'),
+  managerController.updateOne,
+);
 
 module.exports = router;

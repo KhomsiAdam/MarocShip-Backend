@@ -1,31 +1,13 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const Joi = require('joi');
 
 const auth = require('../middlewares/auth');
 const Truck = require('../models/Truck');
 
-// User schema for validation
-const userSchema = Joi.object({
-  email: Joi.string()
-    .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'ma'] } })
-    .trim()
-    .required(),
+const { userSchema } = require('../helpers/validation');
+const { setRefreshSecret } = require('../helpers/secret');
 
-  password: Joi.string()
-    .trim()
-    .min(10)
-    .required(),
-
-  distanceTraveled: Joi.number()
-    .positive(),
-
-  truck: Joi.string()
-    .alphanum()
-    .trim(),
-});
-
-// Get all users (without passwords)
+// Get all users (without passwords), if it's a driver get his truck
 const get = async (Model, req, res, next) => {
   if (Model.modelName !== 'Driver') {
     try {
@@ -105,13 +87,14 @@ const refresh = async (Model, role, req, res) => {
   // Validate refresh token
   let payload = null;
   try {
-    payload = jwt.verify(token, auth.setRefreshSecret(role));
+    payload = jwt.verify(token, setRefreshSecret(role));
   } catch (err) {
     __log.error(err);
     return res.json({ message: false });
   }
   // Get user
   const user = await Model.findOne({ _id: payload._id });
+  // console.log(Model);
   if (!user) {
     return res.json({ message: false });
   }
@@ -122,7 +105,7 @@ const refresh = async (Model, role, req, res) => {
   return res.json({ token: auth.generateAccessToken(user, role) });
 };
 
-// Logout user
+// Logout user, reset refresh token
 const logout = async (res) => {
   auth.sendRefreshToken(res, '');
 };

@@ -1,82 +1,7 @@
 const jwt = require('jsonwebtoken');
-const Joi = require('joi');
 
-const {
-  ADMIN_ACCESS_SECRET,
-  MANAGER_ACCESS_SECRET,
-  SUPERVISOR_ACCESS_SECRET,
-  DRIVER_ACCESS_SECRET,
-  ADMIN_REFRESH_SECRET,
-  MANAGER_REFRESH_SECRET,
-  SUPERVISOR_REFRESH_SECRET,
-  DRIVER_REFRESH_SECRET,
-} = process.env;
-
-// User schema for validation
-const userSchema = Joi.object({
-  email: Joi.string()
-    .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'ma'] } })
-    .trim()
-    .required(),
-
-  password: Joi.string()
-    .trim()
-    .min(10)
-    .required(),
-
-  distanceTraveled: Joi.number()
-    .positive(),
-
-  truck: Joi.string()
-    .alphanum()
-    .trim(),
-
-});
-
-// Set access token secret key depending on role provided
-const setAccessSecret = (role) => {
-  let secret;
-  switch (role) {
-    case 'Admin':
-      secret = ADMIN_ACCESS_SECRET;
-      break;
-    case 'Manager':
-      secret = MANAGER_ACCESS_SECRET;
-      break;
-    case 'Supervisor':
-      secret = SUPERVISOR_ACCESS_SECRET;
-      break;
-    case 'Driver':
-      secret = DRIVER_ACCESS_SECRET;
-      break;
-    default:
-      secret = DRIVER_ACCESS_SECRET;
-      break;
-  }
-  return secret;
-};
-// Set refresh token secret key depending on role provided
-const setRefreshSecret = (role) => {
-  let secret;
-  switch (role) {
-    case 'Admin':
-      secret = ADMIN_REFRESH_SECRET;
-      break;
-    case 'Manager':
-      secret = MANAGER_REFRESH_SECRET;
-      break;
-    case 'Supervisor':
-      secret = SUPERVISOR_REFRESH_SECRET;
-      break;
-    case 'Driver':
-      secret = DRIVER_REFRESH_SECRET;
-      break;
-    default:
-      secret = DRIVER_REFRESH_SECRET;
-      break;
-  }
-  return secret;
-};
+const { userSchema } = require('../helpers/validation');
+const { setAccessSecret, setRefreshSecret } = require('../helpers/secret');
 
 // Access Token generation when login
 const generateAccessToken = (user, role) => {
@@ -190,8 +115,6 @@ module.exports = {
   isLoggedIn,
   validateUser,
   findUser,
-  setAccessSecret,
-  setRefreshSecret,
   generateAccessToken,
   generateRefreshToken,
   sendRefreshToken,

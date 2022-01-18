@@ -1,46 +1,8 @@
-const Joi = require('joi');
-
 const Delivery = require('../models/Delivery');
+const Driver = require('../models/Driver');
 
-// Delivery schema for validation
-const deliverySchema = Joi.object({
-  weight: Joi.number()
-    .positive()
-    .required(),
-
-  amount: Joi.number()
-    .positive(),
-
-  region: Joi.string()
-    .alphanum()
-    .trim()
-    .valid('Local', 'Europe', 'America', 'Asia', 'Australia')
-    .required(),
-
-  from: Joi.string()
-    .alphanum()
-    .trim()
-    .required(),
-
-  to: Joi.string()
-    .alphanum()
-    .trim()
-    .required(),
-
-  date: Joi.date()
-    .min('now')
-    .required(),
-
-  type: Joi.string()
-    .alphanum()
-    .trim(),
-
-  available: Joi.boolean(),
-
-  driver: Joi.string()
-    .alphanum()
-    .trim(),
-});
+const { calculateDeliveryAmount, setDeliveryType } = require('../helpers/delivery');
+const { deliverySchema } = require('../helpers/validation');
 
 // Get all deliveries
 const get = async (req, res, next) => {
@@ -52,41 +14,44 @@ const get = async (req, res, next) => {
   }
 };
 
-// Calculate amount of delivery based on its weight and region
-const calculateDeliveryAmount = (weight, region) => {
-  let amount = 0;
-  switch (region) {
-    case 'Europe':
-      amount = weight * 160;
-      break;
-    case 'America':
-      amount = weight * 220;
-      break;
-    case 'Asia':
-      amount = weight * 240;
-      break;
-    case 'Australia':
-      amount = weight * 260;
-      break;
-    default:
-      if (weight > 3) {
-        const updatedWeight = weight - 3;
-        const updatedAmount = updatedWeight * 5;
-        amount = updatedAmount + 120;
-      } else {
-        amount = weight * 40;
+const getBy = async (req, res, next) => {
+  try {
+    const driver = await Driver.findOne({ _id: req.user._id }).populate('truck');
+    if (driver) {
+      let minAmount;
+      switch (driver.truck.type) {
+        case 'Light':
+          minAmount = 200;
+          break;
+        case 'Medium':
+          minAmount = 800;
+          break;
+        case 'Heavy':
+          minAmount = 1600;
+          break;
+        default:
+          minAmount = 200;
+          break;
       }
-      break;
+      const response = await Delivery.find(
+        {
+          weight: { $lte: minAmount },
+          region: 'Local',
+          type: 'National',
+          available: true,
+          driver: { $exists: false },
+        },
+      );
+      res.json(response);
+    } else {
+      next();
+    }
+  } catch (error) {
+    next(error);
   }
-  return amount;
 };
 
-const setDeliveryType = (region) => {
-  const type = region !== 'Local' ? 'International' : 'National';
-  return type;
-};
-
-// Create a delivery
+// Create delivery, calculate amount based on weight and region, set delivery type based on region
 const create = async (req, res, next) => {
   try {
     const result = deliverySchema.validate(req.body);
@@ -100,9 +65,8 @@ const create = async (req, res, next) => {
         date: req.body.date,
         type: setDeliveryType(req.body.region),
       });
-
-      await newDelivery.save();
-      res.json({ message: 'Delivery was created successfully.' });
+      const response = await newDelivery.save();
+      res.json({ message: 'Delivery was created successfully.', delivery: response });
     } else {
       res.status(422);
       __log.error(result.error);
@@ -114,28 +78,20 @@ const create = async (req, res, next) => {
   }
 };
 
-// Update delivery
-const updateOne = async (req, res, next) => {
-  const { id: _id } = req.params;
+// Update all deliveries that are not available (false) and have no driver to available (true)
+const update = async (req, res, next) => {
   try {
-    const result = deliverySchema.validate(req.body);
-    if (!result.error) {
-      const query = { _id };
-      const delivery = await Delivery.findOne(query);
-      if (delivery) {
-        const updatedDelivery = req.body;
-        const response = await Delivery.findOneAndUpdate(query, {
-          $set: updatedDelivery,
-        }, { new: true }).select('-password');
-        res.json(response);
-      } else {
-        next();
-      }
-    } else {
-      res.status(422);
-      __log.error(result.error);
-      throw new Error(result.error);
-    }
+    const response = await Delivery.updateMany(
+      {
+        available: false,
+        driver: { $exists: false },
+      },
+      {
+        available: true,
+      },
+    );
+    // This will leave deliveries that are already claimed unavailable
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -143,6 +99,7 @@ const updateOne = async (req, res, next) => {
 
 module.exports = {
   get,
+  getBy,
   create,
-  updateOne,
+  update,
 };

@@ -15,9 +15,6 @@ const deliveryController = require('../controllers/deliveryController');
 // Errors
 const LoginError = 'Unable to login.';
 
-// Refresh token
-router.post('/refresh', supervisorController.refresh);
-
 // Supervisor login
 router.post(
   '/login',
@@ -26,7 +23,13 @@ router.post(
   supervisorController.login,
 );
 
-// Delivery creation
+// Refresh token
+router.post(
+  '/refresh',
+  supervisorController.refresh,
+);
+
+// Get Deliveries
 router.get(
   '/deliveries',
   auth.isAuth('Supervisor'),
@@ -38,6 +41,13 @@ router.post(
   '/delivery',
   auth.isAuth('Supervisor'),
   deliveryController.create,
+);
+
+// Activate Deliveries
+router.patch(
+  '/deliveries',
+  auth.isAuth('Supervisor'),
+  deliveryController.update,
 );
 
 module.exports = router;

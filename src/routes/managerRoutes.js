@@ -19,20 +19,32 @@ const driverController = require('../controllers/driverController');
 const LoginError = 'Unable to login.';
 const registerError = 'User already exists with this email.';
 
-// Refresh token
-router.post('/refresh', managerController.refresh);
-
-// Get Supervisors
-router.get('/supervisors', auth.isAuth('Manager'), supervisorController.get);
-// Get Drivers
-router.get('/drivers', auth.isAuth('Manager'), driverController.get);
-
 // Manager login
 router.post(
   '/login',
   auth.validateUser(LoginError),
   auth.findUser(Manager, LoginError, (user) => !user),
   managerController.login,
+);
+
+// Refresh token
+router.post(
+  '/refresh',
+  managerController.refresh,
+);
+
+// Get Supervisors
+router.get(
+  '/supervisors',
+  auth.isAuth('Manager'),
+  supervisorController.get,
+);
+
+// Get Drivers
+router.get(
+  '/drivers',
+  auth.isAuth('Manager'),
+  driverController.get,
 );
 
 // Supervisor register
@@ -54,8 +66,17 @@ router.post(
 );
 
 // Update Supervisor
-router.patch('/supervisor/:id', auth.isAuth('Manager'), supervisorController.updateOne);
+router.patch(
+  '/supervisor/:id',
+  auth.isAuth('Manager'),
+  supervisorController.updateOne,
+);
+
 // Update Driver
-router.patch('/driver/:id', auth.isAuth('Manager'), driverController.updateOne);
+router.patch(
+  '/driver/:id',
+  auth.isAuth('Manager'),
+  driverController.updateOne,
+);
 
 module.exports = router;

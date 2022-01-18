@@ -10,12 +10,10 @@ const Driver = require('../models/Driver');
 
 // Controllers
 const driverController = require('../controllers/driverController');
+const deliveryController = require('../controllers/deliveryController');
 
 // Errors
 const LoginError = 'Unable to login.';
-
-// Refresh token
-router.post('/refresh', driverController.refresh);
 
 // Driver login
 router.post(
@@ -23,6 +21,19 @@ router.post(
   auth.validateUser(LoginError),
   auth.findUser(Driver, LoginError, (user) => !user),
   driverController.login,
+);
+
+// Refresh token
+router.post(
+  '/refresh',
+  driverController.refresh,
+);
+
+// Get Deliveries
+router.get(
+  '/deliveries',
+  auth.isAuth('Driver'),
+  deliveryController.getBy,
 );
 
 module.exports = router;
