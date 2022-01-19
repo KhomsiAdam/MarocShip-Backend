@@ -29,11 +29,25 @@ router.post(
   driverController.refresh,
 );
 
-// Get Deliveries
+// Get available Deliveries
 router.get(
   '/deliveries',
   auth.isAuth('Driver'),
   deliveryController.getBy,
+);
+
+// Claim Delivery
+router.patch(
+  '/delivery/:id',
+  auth.isAuth('Driver'),
+  deliveryController.claim,
+);
+
+// Get claimed deliveries
+router.get(
+  '/claimed',
+  auth.isAuth('Driver'),
+  deliveryController.getClaimed,
 );
 
 module.exports = router;

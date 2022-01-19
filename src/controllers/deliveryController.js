@@ -42,9 +42,31 @@ const getBy = async (req, res, next) => {
           driver: { $exists: false },
         },
       );
-      res.json(response);
+      if (response.length > 0) {
+        res.json(response);
+      } else {
+        res.json({ message: 'There is no available deliveries for you.' });
+      }
     } else {
       next();
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getClaimed = async (req, res, next) => {
+  try {
+    const driver = await Driver.findOne({ _id: req.user._id }).populate('truck');
+    const response = await Delivery.find(
+      {
+        driver: driver._id,
+      },
+    );
+    if (response.length > 0) {
+      res.json(response);
+    } else {
+      res.json({ message: 'You have not claimed any deliveries yet.' });
     }
   } catch (error) {
     next(error);
@@ -81,11 +103,12 @@ const create = async (req, res, next) => {
 // Update all deliveries that are not available (false) and have no driver to available (true)
 const update = async (req, res, next) => {
   try {
+    const query = {
+      available: false,
+      driver: { $exists: false },
+    };
     const response = await Delivery.updateMany(
-      {
-        available: false,
-        driver: { $exists: false },
-      },
+      query,
       {
         available: true,
       },
@@ -97,9 +120,37 @@ const update = async (req, res, next) => {
   }
 };
 
+// Claim a delivery by adding driver _id and make it unavailable (false)
+const claim = async (req, res, next) => {
+  const { id: _id } = req.params;
+  try {
+    const query = {
+      _id,
+      available: true,
+      driver: { $exists: false },
+    };
+    const response = await Delivery.updateOne(
+      query,
+      {
+        available: false,
+        driver: req.user._id,
+      },
+    );
+    if (response.modifiedCount === 0) {
+      res.json({ message: 'This delivery is already claimed.', status: response });
+    } else {
+      res.json({ message: 'Delivery claimed successfully.', status: response });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   get,
   getBy,
+  getClaimed,
   create,
   update,
+  claim,
 };
