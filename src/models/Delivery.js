@@ -22,6 +22,10 @@ const Delivery = mongoose.Schema({
     type: String,
     required: true,
   },
+  distance: {
+    type: Number,
+    required: true,
+  },
   date: {
     type: Date,
     required: true,

@@ -1,3 +1,5 @@
+const fetch = require('cross-fetch');
+
 // Calculate amount of delivery based on its weight and region
 const calculateDeliveryAmount = (weight, region) => {
   let amount = 0;
@@ -28,6 +30,25 @@ const calculateDeliveryAmount = (weight, region) => {
 };
 
 // Set delivery type (National or International) based on region (Local = National)
+const calculateDistance = async (from, to) => {
+  let distance;
+  try {
+    const response = await fetch(`https://www.distance24.org/route.json?stops=${from}|${to}`);
+
+    if (response.status >= 400) {
+      distance = 100;
+      __log.error(new Error('Bad response from server.'));
+    } else {
+      const result = await response.json();
+      distance = result.distance;
+    }
+  } catch (err) {
+    __log.error(err);
+  }
+  return distance;
+};
+
+// Set delivery type (National or International) based on region (Local = National)
 const setDeliveryType = (region) => {
   const type = region !== 'Local' ? 'International' : 'National';
   return type;
@@ -35,5 +56,6 @@ const setDeliveryType = (region) => {
 
 module.exports = {
   calculateDeliveryAmount,
+  calculateDistance,
   setDeliveryType,
 };

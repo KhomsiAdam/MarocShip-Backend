@@ -45,6 +45,9 @@ const deliverySchema = Joi.object({
     .trim()
     .required(),
 
+  distance: Joi.number()
+    .positive(),
+
   date: Joi.date()
     .min('now')
     .required(),

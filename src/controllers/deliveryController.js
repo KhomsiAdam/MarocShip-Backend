@@ -1,7 +1,7 @@
 const Delivery = require('../models/Delivery');
 const Driver = require('../models/Driver');
 
-const { calculateDeliveryAmount, setDeliveryType } = require('../helpers/delivery');
+const { calculateDeliveryAmount, calculateDistance, setDeliveryType } = require('../helpers/delivery');
 const { deliverySchema } = require('../helpers/validation');
 
 // Get all deliveries
@@ -14,6 +14,8 @@ const get = async (req, res, next) => {
   }
 };
 
+// Get available deliveries for a driver based on his truck type, delivery weight,
+// availability (true), region (Local) and type (National)
 const getBy = async (req, res, next) => {
   try {
     const driver = await Driver.findOne({ _id: req.user._id }).populate('truck');
@@ -55,6 +57,7 @@ const getBy = async (req, res, next) => {
   }
 };
 
+// Get all deliveries claimed by a driver
 const getClaimed = async (req, res, next) => {
   try {
     const driver = await Driver.findOne({ _id: req.user._id }).populate('truck');
@@ -84,6 +87,7 @@ const create = async (req, res, next) => {
         region: req.body.region,
         from: req.body.from,
         to: req.body.to,
+        distance: await calculateDistance(req.body.from, req.body.to),
         date: req.body.date,
         type: setDeliveryType(req.body.region),
       });
@@ -124,22 +128,43 @@ const update = async (req, res, next) => {
 const claim = async (req, res, next) => {
   const { id: _id } = req.params;
   try {
-    const query = {
-      _id,
-      available: true,
-      driver: { $exists: false },
+    const findQuery = {
+      _id: req.user._id,
     };
-    const response = await Delivery.updateOne(
-      query,
-      {
+    const driver = await Driver.findOne(findQuery);
+    if (driver) {
+      const updateQuery = {
+        _id,
+        available: true,
+        driver: { $exists: false },
+      };
+      const updatedDelivery = {
         available: false,
         driver: req.user._id,
-      },
-    );
-    if (response.modifiedCount === 0) {
-      res.json({ message: 'This delivery is already claimed.', status: response });
+      };
+      const responseDelivery = await Delivery.findOneAndUpdate(
+        updateQuery,
+        { $set: updatedDelivery },
+        { new: true },
+      );
+      if (responseDelivery) {
+        const driverQuery = {
+          _id: req.user._id,
+        };
+        const updatedDriver = {
+          distanceTraveled: driver.distanceTraveled + responseDelivery.distance,
+        };
+        const responseDriver = await Driver.findOneAndUpdate(
+          driverQuery,
+          { $set: updatedDriver },
+          { new: true },
+        );
+        res.json({ delivery: responseDelivery, driver: responseDriver });
+      } else {
+        next();
+      }
     } else {
-      res.json({ message: 'Delivery claimed successfully.', status: response });
+      next();
     }
   } catch (error) {
     next(error);

@@ -11,6 +11,7 @@ const Driver = mongoose.Schema({
   },
   distanceTraveled: {
     type: Number,
+    default: 0,
   },
   truck: {
     type: mongoose.Schema.Types.ObjectId,
