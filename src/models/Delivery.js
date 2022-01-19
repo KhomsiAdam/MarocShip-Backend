@@ -4,6 +4,7 @@ const Delivery = mongoose.Schema({
   weight: {
     type: Number,
     required: true,
+    max: 1600,
   },
   amount: {
     type: Number,

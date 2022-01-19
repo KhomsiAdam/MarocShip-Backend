@@ -24,6 +24,7 @@ const userSchema = Joi.object({
 const deliverySchema = Joi.object({
   weight: Joi.number()
     .positive()
+    .max(1600)
     .required(),
 
   amount: Joi.number()

@@ -20,24 +20,29 @@ const getBy = async (req, res, next) => {
   try {
     const driver = await Driver.findOne({ _id: req.user._id }).populate('truck');
     if (driver) {
-      let minAmount;
+      let minWeight;
+      let maxWeight;
       switch (driver.truck.type) {
         case 'Light':
-          minAmount = 200;
+          minWeight = 0;
+          maxWeight = 200;
           break;
         case 'Medium':
-          minAmount = 800;
+          minWeight = 201;
+          maxWeight = 800;
           break;
         case 'Heavy':
-          minAmount = 1600;
+          minWeight = 801;
+          maxWeight = 1600;
           break;
         default:
-          minAmount = 200;
+          minWeight = 0;
+          maxWeight = 200;
           break;
       }
       const response = await Delivery.find(
         {
-          weight: { $lte: minAmount },
+          weight: { $gte: minWeight, $lte: maxWeight },
           region: 'Local',
           type: 'National',
           available: true,
