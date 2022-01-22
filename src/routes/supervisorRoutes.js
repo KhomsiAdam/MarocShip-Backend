@@ -50,4 +50,11 @@ router.patch(
   deliveryController.update,
 );
 
+// Change Delivery status to Delivered
+router.patch(
+  '/deliver/:id',
+  auth.isAuth('Supervisor'),
+  deliveryController.delivered,
+);
+
 module.exports = router;

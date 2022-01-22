@@ -1,11 +1,12 @@
 const winston = require('winston');
 
 const levels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  http: 3,
-  debug: 4,
+  delivery: 0,
+  error: 1,
+  warn: 2,
+  info: 3,
+  http: 4,
+  debug: 5,
 };
 
 const level = () => {
@@ -15,6 +16,7 @@ const level = () => {
 };
 
 const colors = {
+  delivery: 'cyan',
   error: 'red',
   warn: 'yellow',
   info: 'green',
@@ -40,6 +42,10 @@ const transports = [
     level: 'error',
   }),
   new winston.transports.File({ filename: 'logs/all.log' }),
+  new winston.transports.File({
+    filename: 'logs/deliveries.log',
+    level: 'delivery',
+  }),
 ];
 
 const logger = winston.createLogger({

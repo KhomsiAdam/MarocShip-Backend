@@ -59,6 +59,11 @@ const deliverySchema = Joi.object({
 
   available: Joi.boolean(),
 
+  status: Joi.string()
+    .alphanum()
+    .valid('Pending', 'Claimed', 'Delivered')
+    .trim(),
+
   driver: Joi.string()
     .alphanum()
     .trim(),

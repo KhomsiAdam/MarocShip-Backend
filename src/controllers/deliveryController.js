@@ -69,6 +69,27 @@ const getClaimed = async (req, res, next) => {
     const response = await Delivery.find(
       {
         driver: driver._id,
+        status: 'Claimed',
+      },
+    );
+    if (response.length > 0) {
+      res.json(response);
+    } else {
+      res.json({ message: 'You have not claimed any deliveries yet.' });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all deliveries claimed by a driver
+const getDelivered = async (req, res, next) => {
+  try {
+    const driver = await Driver.findOne({ _id: req.user._id }).populate('truck');
+    const response = await Delivery.find(
+      {
+        driver: driver._id,
+        status: 'Delivered',
       },
     );
     if (response.length > 0) {
@@ -86,17 +107,21 @@ const create = async (req, res, next) => {
   try {
     const result = deliverySchema.validate(req.body);
     if (!result.error) {
+      const calculatedAmount = calculateDeliveryAmount(req.body.weight, req.body.region);
+      const calculatedDistance = await calculateDistance(req.body.from, req.body.to);
+      const deliveryType = setDeliveryType(req.body.region);
       const newDelivery = new Delivery({
         weight: req.body.weight,
-        amount: calculateDeliveryAmount(req.body.weight, req.body.region),
+        amount: calculatedAmount,
         region: req.body.region,
         from: req.body.from,
         to: req.body.to,
-        distance: await calculateDistance(req.body.from, req.body.to),
+        distance: calculatedDistance,
         date: req.body.date,
-        type: setDeliveryType(req.body.region),
+        type: deliveryType,
       });
       const response = await newDelivery.save();
+      __log.delivery(`(Created) : Delivery created by ${req.user.email}. ${req.body.weight} weight, ${calculatedAmount}dh of type ${deliveryType}. From ${req.body.from} to ${req.body.to} with a distance of ${calculatedDistance} set for ${req.body.date}.`);
       res.json({ message: 'Delivery was created successfully.', delivery: response });
     } else {
       res.status(422);
@@ -123,6 +148,7 @@ const update = async (req, res, next) => {
       },
     );
     // This will leave deliveries that are already claimed unavailable
+    __log.delivery('(Update) : deliveries are now available.');
     res.json(response);
   } catch (error) {
     next(error);
@@ -131,31 +157,84 @@ const update = async (req, res, next) => {
 
 // Claim a delivery by adding driver _id and make it unavailable (false)
 const claim = async (req, res, next) => {
+  // Get id from url parameters
   const { id: _id } = req.params;
   try {
+    // Find driver connected query
     const findQuery = {
       _id: req.user._id,
     };
+    // Find connected driver
     const driver = await Driver.findOne(findQuery);
     if (driver) {
-      const updateQuery = {
+      // Find if he already claimed/delivered the requested delivery
+      const claimedQuery = {
         _id,
-        available: true,
-        driver: { $exists: false },
-      };
-      const updatedDelivery = {
         available: false,
+        status: ['Claimed', 'Delivered'],
         driver: req.user._id,
       };
-      const responseDelivery = await Delivery.findOneAndUpdate(
-        updateQuery,
-        { $set: updatedDelivery },
-        { new: true },
-      );
-      if (responseDelivery) {
-        const driverQuery = {
-          _id: req.user._id,
+      const claimedDelivery = await Delivery.findOne(claimedQuery);
+      // If there is no claimed delivery continue
+      if (!claimedDelivery) {
+        // Update delivery query
+        const updateQuery = {
+          _id,
+          available: true,
+          status: 'Pending',
+          driver: { $exists: false },
         };
+        // Updated delivery data
+        const updatedDelivery = {
+          available: false,
+          status: 'Claimed',
+          driver: req.user._id,
+        };
+        const responseDelivery = await Delivery.findOneAndUpdate(
+          updateQuery,
+          { $set: updatedDelivery },
+          { new: true },
+        );
+        if (responseDelivery) {
+          __log.delivery(`(Claimed) : Delivery ${responseDelivery._id} was claimed by ${driver.email} and it's status was changed to 'Claimed'.`);
+          res.json({ delivery: responseDelivery });
+        } else {
+          res.json({ message: 'There was a problem updating the delivery.' });
+        }
+      } else {
+        res.json({ message: 'You have already claimed/delivered this delivery.' });
+      }
+    } else {
+      next();
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Change status of delivery to 'delivered' after confirming it
+const delivered = async (req, res, next) => {
+  const { id: _id } = req.params;
+  try {
+    const updateQuery = {
+      _id,
+      available: false,
+      driver: { $exists: true },
+    };
+    const updatedDelivery = {
+      status: 'Delivered',
+    };
+    const responseDelivery = await Delivery.findOneAndUpdate(
+      updateQuery,
+      { $set: updatedDelivery },
+      { new: true },
+    );
+    if (responseDelivery) {
+      const driverQuery = {
+        _id: responseDelivery.driver,
+      };
+      const driver = await Driver.findOne(driverQuery);
+      if (driver) {
         const updatedDriver = {
           distanceTraveled: driver.distanceTraveled + responseDelivery.distance,
         };
@@ -164,6 +243,7 @@ const claim = async (req, res, next) => {
           { $set: updatedDriver },
           { new: true },
         );
+        __log.delivery(`(Delivered) : Delivery ${responseDelivery._id} was delivered by ${updatedDriver.email} and it's status was changed to 'Delivered' by Supervisor ${req.user.email}.`);
         res.json({ delivery: responseDelivery, driver: responseDriver });
       } else {
         next();
@@ -180,7 +260,9 @@ module.exports = {
   get,
   getBy,
   getClaimed,
+  getDelivered,
   create,
   update,
   claim,
+  delivered,
 };

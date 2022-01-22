@@ -41,6 +41,12 @@ const Delivery = mongoose.Schema({
     default: false,
     required: true,
   },
+  status: {
+    type: String,
+    enum: ['Pending', 'Claimed', 'Delivered'],
+    default: 'Pending',
+    required: true,
+  },
   driver: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Driver',

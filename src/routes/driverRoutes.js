@@ -50,4 +50,11 @@ router.get(
   deliveryController.getClaimed,
 );
 
+// Get delivered deliveries
+router.get(
+  '/delivered',
+  auth.isAuth('Driver'),
+  deliveryController.getDelivered,
+);
+
 module.exports = router;
