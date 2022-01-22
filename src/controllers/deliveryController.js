@@ -95,7 +95,7 @@ const getDelivered = async (req, res, next) => {
     if (response.length > 0) {
       res.json(response);
     } else {
-      res.json({ message: 'You have not claimed any deliveries yet.' });
+      res.json({ message: 'You have not delivered any deliveries yet.' });
     }
   } catch (error) {
     next(error);
@@ -169,9 +169,8 @@ const claim = async (req, res, next) => {
     if (driver) {
       // Find if he already claimed/delivered the requested delivery
       const claimedQuery = {
-        _id,
         available: false,
-        status: ['Claimed', 'Delivered'],
+        status: ['Claimed'],
         driver: req.user._id,
       };
       const claimedDelivery = await Delivery.findOne(claimedQuery);
@@ -202,7 +201,7 @@ const claim = async (req, res, next) => {
           res.json({ message: 'There was a problem updating the delivery.' });
         }
       } else {
-        res.json({ message: 'You have already claimed/delivered this delivery.' });
+        res.json({ message: 'You have already claimed a delivery.' });
       }
     } else {
       next();
@@ -216,6 +215,7 @@ const claim = async (req, res, next) => {
 const delivered = async (req, res, next) => {
   const { id: _id } = req.params;
   try {
+    // Update delivery status if it is not available and already claimed by a driver
     const updateQuery = {
       _id,
       available: false,
@@ -230,17 +230,22 @@ const delivered = async (req, res, next) => {
       { new: true },
     );
     if (responseDelivery) {
+      // Find driver of the delivery
       const driverQuery = {
         _id: responseDelivery.driver,
       };
       const driver = await Driver.findOne(driverQuery);
       if (driver) {
+        // Update it's traveled distance and push the delivery to the deliveries array
         const updatedDriver = {
           distanceTraveled: driver.distanceTraveled + responseDelivery.distance,
         };
         const responseDriver = await Driver.findOneAndUpdate(
           driverQuery,
-          { $set: updatedDriver },
+          {
+            $set: updatedDriver,
+            $push: { deliveries: responseDelivery._id },
+          },
           { new: true },
         );
         __log.delivery(`(Delivered) : Delivery ${responseDelivery._id} was delivered by ${updatedDriver.email} and it's status was changed to 'Delivered' by Supervisor ${req.user.email}.`);

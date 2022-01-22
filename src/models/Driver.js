@@ -17,6 +17,11 @@ const Driver = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Truck',
   },
+  deliveries: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Delivery',
+    default: [],
+  }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('Driver', Driver);

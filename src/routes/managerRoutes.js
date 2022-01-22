@@ -79,4 +79,11 @@ router.patch(
   driverController.updateOne,
 );
 
+// Apply bonus to drivers
+router.post(
+  '/bonus',
+  auth.isAuth('Manager'),
+  driverController.bonus,
+);
+
 module.exports = router;

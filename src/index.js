@@ -15,7 +15,7 @@ const DB_URI = `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_CLUSTER}.tdwf4.mongodb.
 mongoose.connect(DB_URI)
   .then(() => {
     app.listen(PORT || 4000, () => {
-      __log.info(`Server started, listening on port ${PORT}.`);
+      __log.debug(`Server started, listening on port ${PORT}.`);
     });
   })
   .catch((err) => {
