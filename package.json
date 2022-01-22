@@ -25,6 +25,7 @@
     "helmet": "^3.21.1",
     "joi": "^17.5.0",
     "jsonwebtoken": "^8.5.1",
+    "mailgen": "^2.0.16",
     "mongodb": "^4.3.0",
     "mongoose": "^6.1.6",
     "monk": "^7.3.4",

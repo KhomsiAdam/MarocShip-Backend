@@ -3,6 +3,7 @@ const Driver = require('../models/Driver');
 
 const { calculateDeliveryAmount, calculateDistance, setDeliveryType } = require('../helpers/delivery');
 const { deliverySchema } = require('../helpers/validation');
+const mail = require('../helpers/mail');
 
 // Get all deliveries
 const get = async (req, res, next) => {
@@ -137,19 +138,55 @@ const create = async (req, res, next) => {
 // Update all deliveries that are not available (false) and have no driver to available (true)
 const update = async (req, res, next) => {
   try {
-    const query = {
+    // Setup query to search for deliveries based on weight
+    const deliveryQuery = (weightCriteria) => {
+      const query = {
+        weight: weightCriteria,
+        available: false,
+        driver: { $exists: false },
+      };
+      return query;
+    };
+    // Get deliveries by weight
+    const lightDeliveries = await Delivery.find(deliveryQuery({ $lte: 200 }));
+    const mediumDeliveries = await Delivery.find(deliveryQuery({ $gt: 200, $lte: 800 }));
+    const heavyDeliveries = await Delivery.find(deliveryQuery({ $gt: 800, $lte: 1600 }));
+    // Get drivers
+    const drivers = await Driver.find().populate('truck');
+    if (drivers.length > 0) {
+      const result = drivers.reduce((emails, driver) => {
+        const { type } = driver.truck;
+        const emailsObj = emails;
+        // eslint-disable-next-line no-cond-assign
+        if (emailsObj[type] || (emailsObj[type] = [])) {
+          emailsObj[type].push(driver.email);
+        }
+        return emailsObj;
+      }, {});
+      // Send emails to all drivers of each category if there are available deliveries for them
+      if (lightDeliveries.length > 0) await mail(result.Light.join(', '), 'Light');
+      if (mediumDeliveries.length > 0) await mail(result.Medium.join(', '), 'Medium');
+      if (heavyDeliveries.length > 0) await mail(result.Heavy.join(', '), 'Heavy');
+    }
+    // Update all deliveries that are unavailable and are not claimed
+    const updateQuery = {
       available: false,
       driver: { $exists: false },
     };
     const response = await Delivery.updateMany(
-      query,
+      updateQuery,
       {
         available: true,
       },
     );
     // This will leave deliveries that are already claimed unavailable
-    __log.delivery('(Update) : deliveries are now available.');
-    res.json(response);
+    if (response.modifiedCount !== 0) {
+      __log.delivery('(Update) : deliveries are now available.');
+      res.json({ message: 'Deliveries are now available and notification emails were sent.' });
+    } else {
+      __log.delivery('(Update) : there is no deliveries to update.');
+      res.json({ message: 'There is no deliveries to update.' });
+    }
   } catch (error) {
     next(error);
   }
