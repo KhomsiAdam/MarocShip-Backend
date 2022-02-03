@@ -29,7 +29,7 @@ router.post(
 router.post(
   '/login',
   auth.validateUser(LoginError),
-  auth.findUser(Admin, LoginError, (user) => !user),
+  auth.findUserLogin(LoginError, (user) => !user),
   adminController.login,
 );
 

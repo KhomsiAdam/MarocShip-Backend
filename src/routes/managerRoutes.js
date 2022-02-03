@@ -6,7 +6,6 @@ const router = express.Router();
 const auth = require('../middlewares/auth');
 
 // Models
-const Manager = require('../models/Manager');
 const Supervisor = require('../models/Supervisor');
 const Driver = require('../models/Driver');
 
@@ -23,7 +22,7 @@ const registerError = 'User already exists with this email.';
 router.post(
   '/login',
   auth.validateUser(LoginError),
-  auth.findUser(Manager, LoginError, (user) => !user),
+  auth.findUserLogin(LoginError, (user) => !user),
   managerController.login,
 );
 
@@ -84,6 +83,13 @@ router.post(
   '/bonus',
   auth.isAuth('Manager'),
   driverController.bonus,
+);
+
+// Get Stats
+router.get(
+  '/stats',
+  auth.isAuth('Manager'),
+  driverController.stats,
 );
 
 module.exports = router;

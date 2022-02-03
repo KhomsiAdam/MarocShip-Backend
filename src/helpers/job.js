@@ -1,24 +1,8 @@
+const schedule = require('node-schedule');
 const Driver = require('../models/Driver');
 const Bonus = require('../models/Bonus');
-const userController = require('./userController');
 
-const get = (req, res, next) => {
-  userController.get(Driver, req, res, next);
-};
-const login = (req, res, next) => {
-  userController.login('Driver', req, res, next);
-};
-const refresh = (req, res, next) => {
-  userController.refresh(Driver, 'Driver', req, res, next);
-};
-const register = (req, res, next) => {
-  userController.register(Driver, req, res, next);
-};
-const updateOne = (req, res, next) => {
-  userController.updateOne(Driver, req, res, next);
-};
-
-const bonus = async (req, res, next) => {
+const job = schedule.scheduleJob({ date: 1, hour: 12 }, async () => {
   try {
     // Get all drivers with distance traveled only that made deliveries (with their amount only)
     const drivers = await Driver.find(
@@ -64,40 +48,17 @@ const bonus = async (req, res, next) => {
             deliveries: [],
           },
         );
-        __log.info(`Bonuses have been applied by Manager ${req.user.email}, and all Drivers distance and deliveries have been reset.`);
-        res.json({ message: 'Bonuses have been applied, and Drivers distance and deliveries have been reset.' });
+        __log.info('Bonuses have been applied by Manager, and all Drivers distance and deliveries have been reset.');
+        __log.info('Bonuses have been applied, and Drivers distance and deliveries have been reset.');
       } else {
-        res.json({ message: 'There is no bonuses to apply.' });
+        __log.info('There is no bonuses to apply.');
       }
     } else {
-      res.json({ message: 'No Drivers that have made deliveries found.' });
+      __log.info('No Drivers that have made deliveries found.');
     }
   } catch (error) {
-    next(error);
+    __log.error('what');
   }
-};
-
-const stats = (async (req, res) => {
-  // get driver stats
-  const response = await Driver.aggregate([
-    {
-      $project: {
-        total: { $sum: '$bonus.value' },
-        email: '$email',
-        vehicle: '$vehicle',
-        dates: '$bonus',
-      },
-    },
-  ]);
-  res.json(response);
 });
 
-module.exports = {
-  get,
-  login,
-  refresh,
-  register,
-  updateOne,
-  bonus,
-  stats,
-};
+module.exports = job;

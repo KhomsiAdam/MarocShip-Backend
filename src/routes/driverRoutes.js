@@ -5,9 +5,6 @@ const router = express.Router();
 // Middlewares
 const auth = require('../middlewares/auth');
 
-// Models
-const Driver = require('../models/Driver');
-
 // Controllers
 const driverController = require('../controllers/driverController');
 const deliveryController = require('../controllers/deliveryController');
@@ -19,7 +16,7 @@ const LoginError = 'Unable to login.';
 router.post(
   '/login',
   auth.validateUser(LoginError),
-  auth.findUser(Driver, LoginError, (user) => !user),
+  auth.findUserLogin(LoginError, (user) => !user),
   driverController.login,
 );
 

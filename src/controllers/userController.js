@@ -6,6 +6,11 @@ const Truck = require('../models/Truck');
 
 const { userSchema } = require('../helpers/validation');
 const { setRefreshSecret } = require('../helpers/secret');
+const User = require('../models/User');
+const Driver = require('../models/Driver');
+const Admin = require('../models/Admin');
+const Manager = require('../models/Manager');
+const Supervisor = require('../models/Supervisor');
 
 // Get all users (without passwords), if it's a driver get his truck
 const get = async (Model, req, res, next) => {
@@ -46,6 +51,11 @@ const register = async (Model, req, res, next) => {
       });
     }
     await newUser.save();
+    const registeredUser = new User({
+      email: req.body.email,
+      role: Model.modelName,
+    });
+    await registeredUser.save();
     res.json({ message: 'User was created successfully.' });
   } catch (error) {
     res.status(500);
@@ -54,7 +64,7 @@ const register = async (Model, req, res, next) => {
 };
 
 // User login
-const login = async (role, req, res, next) => {
+const login = async (req, res, next) => {
   try {
     const result = await bcrypt.compare(
       req.body.password,
@@ -62,10 +72,11 @@ const login = async (role, req, res, next) => {
     );
     if (result) {
       // Set refresh token in cookie
-      auth.sendRefreshToken(res, auth.generateRefreshToken(req.user, role));
+      auth.sendRefreshToken(res, auth.generateRefreshToken(req.user, req.role));
       // Send access token
       res.json({
-        token: auth.generateAccessToken(req.user, role),
+        token: auth.generateAccessToken(req.user, req.role),
+        role: [req.role],
       });
     } else {
       res.status(422);
@@ -76,38 +87,117 @@ const login = async (role, req, res, next) => {
     next(error);
   }
 };
+// const login = async (role, req, res, next) => {
+//   try {
+//     const result = await bcrypt.compare(
+//       req.body.password,
+//       req.user.password,
+//     );
+//     if (result) {
+//       // Set refresh token in cookie
+//       auth.sendRefreshToken(res, auth.generateRefreshToken(req.user, role));
+//       // Send access token
+//       res.json({
+//         token: auth.generateAccessToken(req.user, role),
+//       });
+//     } else {
+//       res.status(422);
+//       throw new Error('Unable to login.');
+//     }
+//   } catch (error) {
+//     res.status(res.statusCode === 200 ? 500 : res.statusCode);
+//     next(error);
+//   }
+// };
 
 // Refresh access token
-const refresh = async (Model, role, req, res) => {
+const refresh = async (req, res) => {
   // Get refresh token from cookie
   const token = req.cookies.rtkn;
   if (!token) {
     return res.json({ message: false });
   }
+  console.log(token);
+  const { role } = jwt.decode(token);
   // Validate refresh token
   let payload = null;
   try {
-    payload = jwt.verify(token, setRefreshSecret(role));
+    const secret = setRefreshSecret(role);
+    payload = jwt.verify(token, secret);
+    console.log(payload);
   } catch (err) {
     __log.error(err);
-    return res.json({ message: false });
+    res.json({ message: false });
   }
   // Get user
-  const user = await Model.findOne({ _id: payload._id });
-  // console.log(Model);
+  let user;
+  switch (role) {
+    case 'Admin':
+      user = await Admin.findOne({ _id: payload._id });
+      break;
+    case 'Manager':
+      user = await Manager.findOne({ _id: payload._id });
+      break;
+    case 'Supervisor':
+      user = await Supervisor.findOne({ _id: payload._id });
+      break;
+    case 'Driver':
+      user = await Driver.findOne({ _id: payload._id });
+      break;
+    default:
+      break;
+  }
+  console.log(user);
   if (!user) {
-    return res.json({ message: false });
+    res.json({ message: false });
   }
   // Generate new refresh token
   auth.sendRefreshToken(res, auth.generateRefreshToken(user, role));
 
   // Generate new access token
-  return res.json({ token: auth.generateAccessToken(user, role) });
+  const generatedToken = auth.generateAccessToken(user, role);
+  console.log(generatedToken);
+  res.json({ token: generatedToken, role: [role] });
 };
+// const refresh = async (Model, role, req, res) => {
+//   // Get refresh token from cookie
+//   const token = req.cookies.rtkn;
+//   console.log(token);
+//   console.log(jwt.decode(token));
+//   if (!token) {
+//     return res.json({ message: false });
+//   }
+//   // Validate refresh token
+//   let payload = null;
+//   try {
+//     const secret = setRefreshSecret(role);
+//     console.log(secret);
+//     payload = jwt.verify(token, secret);
+//     console.log(payload);
+//   } catch (err) {
+//     __log.error(err);
+//     res.json({ message: false });
+//   }
+//   // Get user
+//   const user = await Model.findOne({ _id: payload._id });
+//   // console.log(Model);
+//   if (!user) {
+//     res.json({ message: false });
+//   }
+//   // Generate new refresh token
+//   auth.sendRefreshToken(res, auth.generateRefreshToken(user, role));
+
+//   // Generate new access token
+//   const generatedToken = auth.generateAccessToken(user, role);
+//   console.log(generatedToken);
+//   res.json({ token: generatedToken, role: [role] });
+// };
 
 // Logout user, reset refresh token
 const logout = async (res) => {
-  auth.sendRefreshToken(res, '');
+  // console.log(res);
+  // auth.sendRefreshToken(res, '');
+  res.clearCookie('rtkn');
 };
 
 // Update user

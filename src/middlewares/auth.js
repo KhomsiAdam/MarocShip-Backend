@@ -2,29 +2,36 @@ const jwt = require('jsonwebtoken');
 
 const { userSchema } = require('../helpers/validation');
 const { setAccessSecret, setRefreshSecret } = require('../helpers/secret');
+const User = require('../models/User');
+const Admin = require('../models/Admin');
+const Manager = require('../models/Manager');
+const Supervisor = require('../models/Supervisor');
+const Driver = require('../models/Driver');
 
 // Access Token generation when login
-const generateAccessToken = (user, role) => {
+const generateAccessToken = (user, userRole) => {
   const payload = {
     _id: user._id,
     email: user.email,
+    role: userRole,
   };
   return jwt.sign(
     payload,
-    setAccessSecret(role),
-    { expiresIn: '15m' },
+    setAccessSecret(userRole),
+    { expiresIn: '10s' },
   );
 };
 
 // Refresh Token generation when login
-const generateRefreshToken = (user, role) => {
+const generateRefreshToken = (user, userRole) => {
   const payload = {
     _id: user._id,
     email: user.email,
+    role: userRole,
   };
   return jwt.sign(
     payload,
-    setRefreshSecret(role),
+    setRefreshSecret(userRole),
     { expiresIn: '7d' },
   );
 };
@@ -36,6 +43,8 @@ const sendRefreshToken = (res, token) => {
     token,
     {
       httpOnly: true,
+      sameSite: 'None',
+      secure: true,
       path: '/refresh',
     },
   );
@@ -51,12 +60,14 @@ const unAuthorized = (res, next) => {
 // Is authenticated middleware
 const isAuth = (role) => (req, res, next) => {
   const authHeader = req.get('Authorization');
+  console.log(authHeader);
   if (authHeader) {
     const token = authHeader.split(' ')[1];
     if (token) {
       jwt.verify(token, setAccessSecret(role), (error, user) => {
         if (error) {
           res.setHeader('Content-Type', 'application/json');
+          res.status(403);
           next(error);
         }
         req.user = user;
@@ -110,11 +121,50 @@ const findUser = (Model, defaultLoginError, isError, errorCode = 422) => async (
   }
 };
 
+// Find user with provided credentials
+const findUserLogin = (defaultLoginError, isError, errorCode = 422) => async (req, res, next) => {
+  try {
+    const fetchedUser = await User.findOne({
+      email: req.body.email,
+    }, 'email role');
+    if (isError(fetchedUser)) {
+      res.status(errorCode);
+      next(new Error(defaultLoginError));
+    } else {
+      req.role = fetchedUser.role;
+      switch (fetchedUser.role) {
+        case 'Admin':
+          req.user = await Admin.findOne({ email: req.body.email }, 'email password');
+          next();
+          break;
+        case 'Manager':
+          req.user = await Manager.findOne({ email: req.body.email }, 'email password');
+          next();
+          break;
+        case 'Supervisor':
+          req.user = await Supervisor.findOne({ email: req.body.email }, 'email password');
+          next();
+          break;
+        case 'Driver':
+          req.user = await Driver.findOne({ email: req.body.email }, 'email password');
+          next();
+          break;
+        default:
+          break;
+      }
+    }
+  } catch (error) {
+    res.status(500);
+    next(error);
+  }
+};
+
 module.exports = {
   isAuth,
   isLoggedIn,
   validateUser,
   findUser,
+  findUserLogin,
   generateAccessToken,
   generateRefreshToken,
   sendRefreshToken,

@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 
 const app = require('./config/app');
 
+require('./helpers/job');
+
 const {
   PORT,
   DB_USER,

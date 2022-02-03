@@ -5,9 +5,6 @@ const router = express.Router();
 // Middlewares
 const auth = require('../middlewares/auth');
 
-// Models
-const Supervisor = require('../models/Supervisor');
-
 // Controllers
 const supervisorController = require('../controllers/supervisorController');
 const deliveryController = require('../controllers/deliveryController');
@@ -19,7 +16,7 @@ const LoginError = 'Unable to login.';
 router.post(
   '/login',
   auth.validateUser(LoginError),
-  auth.findUser(Supervisor, LoginError, (user) => !user),
+  auth.findUserLogin(LoginError, (user) => !user),
   supervisorController.login,
 );
 
